@@ -1,0 +1,10 @@
+Thank you, {{ contact.name }}!
+
+We received your message and one of our team members will get back to you
+within 24 hours.
+
+Subject: {{ contact.subject }}
+
+{{ contact.message }}
+
+- Madni Solar

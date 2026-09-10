@@ -1,0 +1,8 @@
+New contact message - Madni Solar
+
+Name:    {{ contact.name }}
+Email:   {{ contact.email }}
+Phone:   {{ contact.phone|default:"-" }}
+Subject: {{ contact.subject }}
+
+{{ contact.message }}
