@@ -1,0 +1,17 @@
+New solar calculator request - Madni Solar
+
+Name:        {{ submission.full_name }}
+Email:       {{ submission.email }}
+Phone:       {{ submission.phone }}
+Meter Type:  {{ submission.get_meter_type_display }}
+Bill:        Rs. {{ submission.bill_amount }} / month
+Units:       {{ submission.bill_units }} / month
+House Area:  {{ submission.house_area }} Marla
+Address:     {{ submission.address }}
+
+Load Calculated: {{ submission.load_calculated }} kW
+{% for line in load_lines %}{{ line }}
+{% endfor %}
+{% if submission.bill_file %}
+Electricity bill: {% if bill_image_cid %}see attached image{% else %}(PDF) attached in the admin: {{ submission.bill_file.name }}{% endif %}
+{% endif %}

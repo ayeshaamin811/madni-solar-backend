@@ -1,0 +1,12 @@
+Thank you, {{ submission.full_name }}!
+
+We received your solar calculation request and one of our team members will
+get back to you shortly with a system recommendation.
+
+Meter Type:  {{ submission.get_meter_type_display }}
+Bill:        Rs. {{ submission.bill_amount }} / month
+Units:       {{ submission.bill_units }} / month
+Load Calculated: {{ submission.load_calculated }} kW
+{% for line in load_lines %}{{ line }}
+{% endfor %}
+- Madni Solar

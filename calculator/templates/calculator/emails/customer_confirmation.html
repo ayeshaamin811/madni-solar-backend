@@ -1,0 +1,69 @@
+{% comment %}
+Auto-reply sent to the customer right after they submit the calculator form.
+Same table-based, inline-style layout as contact/emails/customer_confirmation.html.
+{% endcomment %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>We received your request</title>
+</head>
+<body style="margin:0; padding:0; background-color:#f2f2f2; font-family:Arial, Helvetica, sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f2f2f2; padding:24px 0;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px; width:100%; background-color:#ffffff; border-radius:8px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+
+          <!-- Header -->
+          <tr>
+            <td style="background-color:#01164F; padding:24px 32px;">
+              <span style="color:#ffffff; font-size:20px; font-weight:bold; letter-spacing:0.5px;">MADNI SOLAR</span>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:32px;">
+              <p style="margin:0 0 16px; color:#1a1a1a; font-size:18px; font-weight:bold;">Thank you, {{ submission.full_name }}!</p>
+
+              <p style="margin:0 0 20px; color:#1a1a1a; font-size:14px; line-height:1.6;">
+                We received your solar calculation request and one of our team
+                members will get back to you shortly with a system recommendation.
+              </p>
+
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="padding:6px 0; color:#01164F; font-size:13px; font-weight:bold; width:110px; vertical-align:top;">Meter Type</td>
+                  <td style="padding:6px 0; color:#1a1a1a; font-size:14px;">{{ submission.get_meter_type_display }}</td>
+                </tr>
+                <tr>
+                  <td style="padding:6px 0; color:#01164F; font-size:13px; font-weight:bold; vertical-align:top;">Bill</td>
+                  <td style="padding:6px 0; color:#1a1a1a; font-size:14px;">Rs. {{ submission.bill_amount }} / month &middot; {{ submission.bill_units }} units / month</td>
+                </tr>
+              </table>
+
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:16px;">
+                <tr>
+                  <td style="background-color:#f2f2f2; border-left:3px solid #e06a10; border-radius:4px; padding:16px; color:#1a1a1a; font-size:14px; line-height:1.6;">
+                    <strong style="color:#01164F;">Load Calculated: {{ submission.load_calculated }} kW</strong><br>
+                    {% for line in load_lines %}{{ line }}<br>{% endfor %}
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:16px 32px; background-color:#f2f2f2; color:#777777; font-size:12px; text-align:center;">
+              This is an automated confirmation from Madni Solar.
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

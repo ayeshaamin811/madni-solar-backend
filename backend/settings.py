@@ -67,6 +67,7 @@ INSTALLED_APPS = [
 
     # local
     'contact',
+    'calculator',
 ]
 
 MIDDLEWARE = [
@@ -149,6 +150,10 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+# Uploaded electricity bills (calculator app).
+MEDIA_URL = 'media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
 
 # Django REST Framework
 # https://www.django-rest-framework.org/api-guide/settings/
@@ -160,6 +165,7 @@ REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_RATES': {
         'anon': '60/hour',
         'contact': '5/hour',  # 5 messages per hour per IP is plenty
+        'calculator': '5/hour',  # same reasoning as contact
     },
 }
 
@@ -207,13 +213,20 @@ else:
     }
 
 DEFAULT_FROM_EMAIL = os.environ.get(
-    'DEFAULT_FROM_EMAIL', 'Madni Solar <info@madnisolar.pk>'
+    'DEFAULT_FROM_EMAIL', 'Madni Solar <zain.saleem155@gmail.com>'
 )
 
 # Addresses that receive a notification when a new contact message arrives.
 CONTACT_NOTIFY_EMAILS = [
     e.strip()
-    for e in os.environ.get('CONTACT_NOTIFY_EMAILS', 'info@madnisolar.pk').split(',')
+    for e in os.environ.get('CONTACT_NOTIFY_EMAILS', 'zain.saleem155@gmail.com').split(',')
+    if e.strip()
+]
+
+# Addresses that receive a notification when a new calculator submission arrives.
+CALCULATOR_NOTIFY_EMAILS = [
+    e.strip()
+    for e in os.environ.get('CALCULATOR_NOTIFY_EMAILS', 'zain.saleem155@gmail.com').split(',')
     if e.strip()
 ]
 
