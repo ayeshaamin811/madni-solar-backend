@@ -10,9 +10,9 @@ All API routes live under `/api/`:
     POST /api/quotes/                        -> request a quote form
 """
 from django.conf import settings
-from django.conf.urls.static import static
 from django.contrib import admin
-from django.urls import include, path
+from django.urls import include, path, re_path
+from django.views.static import serve
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -22,7 +22,14 @@ urlpatterns = [
     path('api/', include('quotes.urls')),
 ]
 
-# Served unconditionally (not just when DEBUG) since this app has no other
-# media host (e.g. S3) - product/brand photos and calculator bill uploads
-# need to be reachable in production too.
-urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# django.conf.urls.static.static() no-ops when DEBUG is False (it's meant for
+# dev only), so call the view it wraps directly - this app has no other media
+# host (e.g. S3), so product/brand photos and calculator bill uploads need to
+# be reachable in production too.
+urlpatterns += [
+    re_path(
+        r'^%s(?P<path>.*)$' % settings.MEDIA_URL.lstrip('/'),
+        serve,
+        {'document_root': settings.MEDIA_ROOT},
+    ),
+]
