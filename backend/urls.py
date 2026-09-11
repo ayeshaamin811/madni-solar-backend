@@ -22,5 +22,7 @@ urlpatterns = [
     path('api/', include('quotes.urls')),
 ]
 
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# Served unconditionally (not just when DEBUG) since this app has no other
+# media host (e.g. S3) - product/brand photos and calculator bill uploads
+# need to be reachable in production too.
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
