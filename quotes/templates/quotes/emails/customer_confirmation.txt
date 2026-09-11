@@ -1,0 +1,11 @@
+Thank you, {{ quote.first_name }}!
+
+We received your quote request and one of our team members will get back to
+you shortly.
+{% if quote.items %}
+Items:
+{% for item in quote.items %}- {{ item.name }} x{{ item.quantity }} = Rs. {{ item.lineTotal }}
+{% endfor %}{% endif %}{% if quote.quote_total %}
+Quote Total: Rs. {{ quote.quote_total }}
+{% endif %}
+- Madni Solar

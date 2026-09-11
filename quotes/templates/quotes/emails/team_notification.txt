@@ -1,0 +1,14 @@
+New quote request - Madni Solar
+
+Name:  {{ quote.first_name }} {{ quote.last_name }}
+Phone: {{ quote.phone }}
+{% if quote.email %}Email: {{ quote.email }}
+{% endif %}{% if quote.message %}
+Message: {{ quote.message }}
+{% endif %}
+{% if quote.items %}Items:
+{% for item in quote.items %}- {{ item.name }} x{{ item.quantity }} = Rs. {{ item.lineTotal }}
+{% endfor %}{% else %}General enquiry - no product selected.
+{% endif %}
+{% if quote.quote_total %}Quote Total: Rs. {{ quote.quote_total }}
+{% endif %}

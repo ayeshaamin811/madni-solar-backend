@@ -19,10 +19,6 @@ from dotenv import load_dotenv
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Load the project-root `.env` into the environment. Only calls made AFTER
-# this line see those values via os.environ.get(...). Without it Django never
-# reads `.env` at all, which silently leaves email printing to the console.
-# Real environment variables take precedence over `.env` (override=False).
 load_dotenv(BASE_DIR / '.env', override=False)
 
 
@@ -68,6 +64,8 @@ INSTALLED_APPS = [
     # local
     'contact',
     'calculator',
+    'solar_panels',
+    'quotes',
 ]
 
 MIDDLEWARE = [
@@ -166,6 +164,7 @@ REST_FRAMEWORK = {
         'anon': '60/hour',
         'contact': '5/hour',  # 5 messages per hour per IP is plenty
         'calculator': '5/hour',  # same reasoning as contact
+        'quote': '5/hour',  # same reasoning as contact
     },
 }
 
@@ -227,6 +226,13 @@ CONTACT_NOTIFY_EMAILS = [
 CALCULATOR_NOTIFY_EMAILS = [
     e.strip()
     for e in os.environ.get('CALCULATOR_NOTIFY_EMAILS', 'zain.saleem155@gmail.com').split(',')
+    if e.strip()
+]
+
+# Addresses that receive a notification when a new quote request arrives.
+QUOTE_NOTIFY_EMAILS = [
+    e.strip()
+    for e in os.environ.get('QUOTE_NOTIFY_EMAILS', 'zain.saleem155@gmail.com').split(',')
     if e.strip()
 ]
 
