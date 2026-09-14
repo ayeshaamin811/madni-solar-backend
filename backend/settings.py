@@ -67,6 +67,8 @@ INSTALLED_APPS = [
     'calculator',
     'solar_panels',
     'inverters',
+    'batteries',
+    'products',
     'quotes',
 ]
 

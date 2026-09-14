@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 
 from backend.image_utils import compress_field_file
@@ -54,6 +55,15 @@ class Brand(models.Model):
     def __str__(self):
         return f"{self.parent} -> {self.name}" if self.parent else self.name
 
+    def clean(self):
+        # A brand set as its own (or an ancestor's) parent would make
+        # __str__ - and any tree walk - recurse forever.
+        node = self.parent
+        while node is not None:
+            if node.pk == self.pk:
+                raise ValidationError({"parent": "A brand can't be its own ancestor."})
+            node = node.parent
+
     def save(self, *args, **kwargs):
         self.slug = self.slug.lower()
         self.image = compress_field_file(
@@ -85,7 +95,9 @@ class CategoryBrand(models.Model):
 
 
 class Product(models.Model):
-    brand = models.OneToOneField(Brand, on_delete=models.CASCADE, related_name="product")
+    # A ForeignKey, not OneToOne - a brand/sub-variant can carry more than
+    # one product (e.g. several capacities/models under the same "Fox").
+    brand = models.ForeignKey(Brand, on_delete=models.CASCADE, related_name="products")
     name = models.CharField(max_length=200)
     slug = models.SlugField(max_length=220, unique=True)
     price = models.DecimalField(max_digits=10, decimal_places=2)

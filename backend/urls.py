@@ -10,6 +10,12 @@ All API routes live under `/api/`:
     GET  /api/inverters/categories/           -> inverter category/brand tree
     GET  /api/inverters/products/             -> inverter products
     GET  /api/inverters/products/<slug>/      -> single product
+    GET  /api/batteries/brands/               -> battery brand tree
+    GET  /api/batteries/products/             -> battery products
+    GET  /api/batteries/products/<slug>/      -> single product
+    GET  /api/products/categories/            -> accessories category/item tree
+    GET  /api/products/products/              -> accessories products
+    GET  /api/products/products/<slug>/       -> single product
     POST /api/quotes/                        -> request a quote form
 """
 from django.conf import settings
@@ -23,6 +29,8 @@ urlpatterns = [
     path('api/', include('calculator.urls')),
     path('api/', include('solar_panels.urls')),
     path('api/', include('inverters.urls')),
+    path('api/', include('batteries.urls')),
+    path('api/', include('products.urls')),
     path('api/', include('quotes.urls')),
 ]
 

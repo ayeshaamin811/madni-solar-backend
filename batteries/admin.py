@@ -1,24 +1,10 @@
 from django.contrib import admin
 
-from .models import Brand, Category, CategoryBrand, Product
-
-
-class CategoryBrandInline(admin.TabularInline):
-    model = CategoryBrand
-    extra = 1
-    autocomplete_fields = ["brand"]
-
-
-@admin.register(Category)
-class CategoryAdmin(admin.ModelAdmin):
-    list_display = ("name", "slug", "order")
-    search_fields = ("name", "slug")
-    prepopulated_fields = {"slug": ("name",)}
-    inlines = [CategoryBrandInline]
+from .models import Brand, Product
 
 
 class SubVariantInline(admin.TabularInline):
-    """Sub-variants (e.g. Inverex -> Single Phase) nested under their parent brand."""
+    """Children nested under their parent brand (e.g. Huawei -> HV)."""
 
     model = Brand
     fk_name = "parent"
@@ -29,6 +15,9 @@ class SubVariantInline(admin.TabularInline):
 
 @admin.register(Brand)
 class BrandAdmin(admin.ModelAdmin):
+    # No list_filter on `parent` - it's self-referential and Django admin's
+    # related filter recurses into __str__ for every ancestor, which blows
+    # the stack for this model (bit us for real on the inverters app).
     list_display = ("name", "slug", "parent", "order")
     search_fields = ("name", "slug")
     prepopulated_fields = {"slug": ("name",)}
@@ -38,7 +27,9 @@ class BrandAdmin(admin.ModelAdmin):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
+    # No prepopulated_fields on slug - it's deliberately left for the admin
+    # to leave blank so Product.save() can add the "battery-" prefix (see
+    # models.py); auto-filling it client-side from `name` would skip that.
     list_display = ("name", "brand", "slug", "price", "created_at")
     search_fields = ("name", "slug", "short_description")
-    prepopulated_fields = {"slug": ("name",)}
     autocomplete_fields = ["brand"]
