@@ -70,6 +70,7 @@ INSTALLED_APPS = [
     'batteries',
     'products',
     'quotes',
+    'orders',
 ]
 
 MIDDLEWARE = [
@@ -185,6 +186,7 @@ REST_FRAMEWORK = {
         'contact': '5/hour',  # 5 messages per hour per IP is plenty
         'calculator': '5/hour',  # same reasoning as contact
         'quote': '5/hour',  # same reasoning as contact
+        'order': '5/hour',  # same reasoning as contact
     },
 }
 
@@ -268,6 +270,22 @@ QUOTE_NOTIFY_EMAILS = [
     for e in os.environ.get('QUOTE_NOTIFY_EMAILS', 'zain.saleem155@gmail.com').split(',')
     if e.strip()
 ]
+
+# Addresses that receive a notification when a new order arrives.
+ORDER_NOTIFY_EMAILS = [
+    e.strip()
+    for e in os.environ.get('ORDER_NOTIFY_EMAILS', 'zain.saleem155@gmail.com').split(',')
+    if e.strip()
+]
+
+# Flat delivery charge applied to every order. Lives here rather than in the
+# checkout UI so the number has one home - the frontend reads it from
+# GET /api/orders/settings/ and the serializer recomputes every total with it.
+ORDER_FLAT_SHIPPING = int(os.environ.get('ORDER_FLAT_SHIPPING', '2000'))
+
+# Display currency for the checkout. Prices are stored as plain decimals, so
+# this is a label, not a conversion.
+ORDER_CURRENCY = os.environ.get('ORDER_CURRENCY', 'PKR')
 
 # Used to build the admin link inside the notification email.
 SITE_URL = os.environ.get('SITE_URL', 'http://localhost:8000')

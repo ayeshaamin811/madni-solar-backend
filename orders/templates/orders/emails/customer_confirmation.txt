@@ -1,0 +1,24 @@
+Thank you, {{ order.first_name }}!
+
+We have received your order {{ order.order_number }}.
+
+Please note this is an order request - no payment has been taken. One of our
+team members will call you shortly on {{ order.phone }} to confirm the order
+and arrange delivery.
+
+Keep your order number handy when we call: {{ order.order_number }}
+
+ITEMS
+{% for item in items %}- {{ item.name }} x{{ item.quantity }} = Rs. {{ item.line_total }}
+{% endfor %}
+Subtotal: Rs. {{ order.subtotal }}
+Shipping: Rs. {{ order.shipping }}
+Total:    Rs. {{ order.total }}
+
+DELIVERY TO
+{{ order.address }}
+{% if order.apartment %}{{ order.apartment }}
+{% endif %}{{ order.city }}{% if order.state %}, {{ order.state }}{% endif %} {{ order.post_code }}
+{{ order.country }}
+
+- Madni Solar

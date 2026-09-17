@@ -17,6 +17,8 @@ All API routes live under `/api/`:
     GET  /api/products/products/              -> accessories products
     GET  /api/products/products/<slug>/       -> single product
     POST /api/quotes/                        -> request a quote form
+    POST /api/orders/                        -> checkout / place order form
+    GET  /api/orders/settings/               -> flat shipping + currency
 """
 from django.conf import settings
 from django.contrib import admin
@@ -32,6 +34,7 @@ urlpatterns = [
     path('api/', include('batteries.urls')),
     path('api/', include('products.urls')),
     path('api/', include('quotes.urls')),
+    path('api/', include('orders.urls')),
 ]
 
 # django.conf.urls.static.static() no-ops when DEBUG is False (it's meant for

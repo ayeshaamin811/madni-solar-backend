@@ -1,0 +1,25 @@
+New order {{ order.order_number }} - Madni Solar
+
+This is an order request. No payment has been taken - call the customer to confirm.
+
+BILLING
+Name:     {{ order.customer_name }}
+Phone:    {{ order.phone }}
+Email:    {{ order.email }}
+{% if order.business_name %}Business: {{ order.business_name }}
+{% endif %}Address:  {{ order.address }}
+{% if order.apartment %}          {{ order.apartment }}
+{% endif %}          {{ order.city }}{% if order.state %}, {{ order.state }}{% endif %} {{ order.post_code }}
+          {{ order.country }}
+{% if order.order_notes %}
+ORDER NOTES
+{{ order.order_notes }}
+{% endif %}
+ITEMS
+{% for item in items %}- {{ item.name }} x{{ item.quantity }} @ Rs. {{ item.price }} = Rs. {{ item.line_total }}
+{% endfor %}
+Subtotal: Rs. {{ order.subtotal }}
+Shipping: Rs. {{ order.shipping }}
+Total:    Rs. {{ order.total }}
+
+Status: {{ order.get_status_display }}
