@@ -233,11 +233,26 @@ if os.environ.get('RAILWAY_ENVIRONMENT'):
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
 #
 # MAILERS is the current API in Django 6.1 (the old EMAIL_* settings are
-# removed in 7.0). With no EMAIL_HOST configured, mail is printed to the
-# terminal so local development needs no SMTP setup at all. Setting EMAIL_HOST
-# (see `.env`) switches to real SMTP delivery.
+# removed in 7.0). Three delivery modes, picked by which variables are set:
+#
+#   RESEND_API_KEY -> Resend's HTTP API. This is what production uses, since
+#                     Railway's hobby plan blocks outbound SMTP ports and mail
+#                     sent over SMTP there just times out.
+#   EMAIL_HOST     -> plain SMTP, still handy for local testing against Gmail.
+#   neither        -> messages are printed to the terminal, so local
+#                     development needs no mail setup at all.
 
-if os.environ.get('EMAIL_HOST'):
+if os.environ.get('RESEND_API_KEY'):
+    MAILERS = {
+        'default': {
+            'BACKEND': 'backend.email_backends.ResendEmailBackend',
+            'OPTIONS': {
+                'api_key': os.environ['RESEND_API_KEY'],
+                'timeout': 10,
+            },
+        },
+    }
+elif os.environ.get('EMAIL_HOST'):
     MAILERS = {
         'default': {
             'BACKEND': 'django.core.mail.backends.smtp.EmailBackend',
@@ -259,34 +274,34 @@ else:
     }
 
 DEFAULT_FROM_EMAIL = os.environ.get(
-    'DEFAULT_FROM_EMAIL', 'Madni Solar <zain.saleem155@gmail.com>'
+    'DEFAULT_FROM_EMAIL', 'Madni Solar <info@madnisolar.com>'
 )
 
 # Addresses that receive a notification when a new contact message arrives.
 CONTACT_NOTIFY_EMAILS = [
     e.strip()
-    for e in os.environ.get('CONTACT_NOTIFY_EMAILS', 'zain.saleem155@gmail.com').split(',')
+    for e in os.environ.get('CONTACT_NOTIFY_EMAILS', 'info@madnisolar.com').split(',')
     if e.strip()
 ]
 
 # Addresses that receive a notification when a new calculator submission arrives.
 CALCULATOR_NOTIFY_EMAILS = [
     e.strip()
-    for e in os.environ.get('CALCULATOR_NOTIFY_EMAILS', 'zain.saleem155@gmail.com').split(',')
+    for e in os.environ.get('CALCULATOR_NOTIFY_EMAILS', 'info@madnisolar.com').split(',')
     if e.strip()
 ]
 
 # Addresses that receive a notification when a new quote request arrives.
 QUOTE_NOTIFY_EMAILS = [
     e.strip()
-    for e in os.environ.get('QUOTE_NOTIFY_EMAILS', 'zain.saleem155@gmail.com').split(',')
+    for e in os.environ.get('QUOTE_NOTIFY_EMAILS', 'info@madnisolar.com').split(',')
     if e.strip()
 ]
 
 # Addresses that receive a notification when a new order arrives.
 ORDER_NOTIFY_EMAILS = [
     e.strip()
-    for e in os.environ.get('ORDER_NOTIFY_EMAILS', 'zain.saleem155@gmail.com').split(',')
+    for e in os.environ.get('ORDER_NOTIFY_EMAILS', 'info@madnisolar.com').split(',')
     if e.strip()
 ]
 

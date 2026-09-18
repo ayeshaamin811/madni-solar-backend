@@ -337,7 +337,7 @@ Both are sent in a background thread, so a slow SMTP round trip never delays the
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `ORDER_NOTIFY_EMAILS` | `zain.saleem155@gmail.com` | Comma-separated team recipients |
+| `ORDER_NOTIFY_EMAILS` | `info@madnisolar.com` | Comma-separated team recipients |
 | `ORDER_FLAT_SHIPPING` | `2000` | Flat delivery charge |
 | `ORDER_CURRENCY` | `PKR` | Display currency label |
 
