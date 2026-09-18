@@ -38,9 +38,10 @@ urlpatterns = [
 ]
 
 # django.conf.urls.static.static() no-ops when DEBUG is False (it's meant for
-# dev only), so call the view it wraps directly - this app has no other media
-# host (e.g. S3), so product/brand photos and calculator bill uploads need to
-# be reachable in production too.
+# dev only), so call the view it wraps directly. Uploads live in Cloudflare R2
+# in production and URLs point there, but this route stays as a fallback: it
+# keeps any file still sitting on the volume reachable, which matters while the
+# move to R2 is being verified. It can go once the volume does.
 urlpatterns += [
     re_path(
         r'^%s(?P<path>.*)$' % settings.MEDIA_URL.lstrip('/'),

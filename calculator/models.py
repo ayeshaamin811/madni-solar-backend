@@ -1,5 +1,7 @@
 from django.db import models
 
+from backend.storages import private_media_storage
+
 
 class CalculatorSubmission(models.Model):
     class MeterType(models.TextChoices):
@@ -9,7 +11,14 @@ class CalculatorSubmission(models.Model):
     meter_type = models.CharField(max_length=10, choices=MeterType.choices)
     bill_amount = models.DecimalField(max_digits=10, decimal_places=2)
     bill_units = models.DecimalField(max_digits=10, decimal_places=2)
-    bill_file = models.FileField(upload_to="calculator/bills/%Y/%m/", null=True, blank=True)
+    # Bills are customer documents, so they go to a private bucket and are only
+    # reachable through signed URLs - never from the public image CDN.
+    bill_file = models.FileField(
+        upload_to="calculator/bills/%Y/%m/",
+        storage=private_media_storage,
+        null=True,
+        blank=True,
+    )
 
     full_name = models.CharField(max_length=120)
     phone = models.CharField(max_length=32)

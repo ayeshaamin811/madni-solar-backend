@@ -169,9 +169,21 @@ STORAGES = {
     },
 }
 
-# Uploaded electricity bills (calculator app).
+# Uploaded media: product/brand photos and calculator bill uploads. Used for
+# local development, and as the source directory the one-off
+# `migrate_media_to_r2` command reads from.
 MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# In production these live in Cloudflare R2 instead - object storage keeps the
+# files off the app's disk, serves them from a CDN, and survives redeploys.
+# Without R2_BUCKET (i.e. locally) everything falls back to MEDIA_ROOT above.
+# Both are required: without the public URL, R2 would hand out endpoint links
+# that visitors cannot open, so fall back to the local files instead.
+USE_R2 = bool(os.environ.get('R2_BUCKET') and os.environ.get('R2_PUBLIC_URL'))
+
+if USE_R2:
+    STORAGES['default'] = {'BACKEND': 'backend.storages.PublicMediaStorage'}
 
 
 # Django REST Framework
