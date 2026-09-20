@@ -97,18 +97,24 @@ class ProductDetailSerializer(ProductListSerializer):
 
     def get_categories(self, obj):
         # Breadcrumb: Madni Solar / Inverters / <Category> / [<Parent brand> /] <Item>.
-        # A shared brand (e.g. Fox, placed under two categories) resolves to
-        # whichever category sorts first - fine for a breadcrumb, which just
-        # needs one valid path, not every path.
         brand = obj.brand
         trail = ["Madni Solar", "Inverters"]
 
-        node = brand.parent or brand
-        category_link = (
-            node.category_links.select_related("category").order_by("category__order", "order").first()
-        )
-        if category_link:
-            trail.append(category_link.category.name)
+        if obj.category_id:
+            trail.append(obj.category.name)
+        else:
+            # Only products left without a category land here (see
+            # InverterProductListView for why those still exist). Fall back to
+            # the brand's first placement - for a shared brand that may be the
+            # wrong one of the two, but a breadcrumb just needs one valid path.
+            node = brand.parent or brand
+            category_link = (
+                node.category_links.select_related("category")
+                .order_by("category__order", "order")
+                .first()
+            )
+            if category_link:
+                trail.append(category_link.category.name)
         if brand.parent:
             trail.append(brand.parent.name)
         trail.append(brand.name)

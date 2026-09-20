@@ -38,7 +38,11 @@ class BrandAdmin(admin.ModelAdmin):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ("name", "brand", "slug", "price", "created_at")
+    list_display = ("name", "brand", "category", "slug", "price", "created_at")
+    # Filtering on `category` also offers a "-" bucket for products still
+    # without one - that's the list to work through after this field landed.
+    list_filter = ("category",)
     search_fields = ("name", "slug", "short_description")
     prepopulated_fields = {"slug": ("name",)}
     autocomplete_fields = ["brand"]
+    list_select_related = ("brand", "category")

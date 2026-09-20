@@ -32,14 +32,26 @@ class InverterProductListView(ListAPIView):
     authentication_classes = []
 
     def get_queryset(self):
-        queryset = Product.objects.select_related("brand", "brand__parent")
+        queryset = Product.objects.select_related("brand", "brand__parent", "category")
         category_slug = self.request.query_params.get("category")
         brand_slug = self.request.query_params.get("brand")
 
         if category_slug:
+            # Match the product's own category, not its brand's placements - a
+            # shared brand (Fox sits under both Ongrid and Hybrid) would
+            # otherwise return every product of that brand under both slugs.
             queryset = queryset.filter(
-                Q(brand__category_links__category__slug=category_slug)
-                | Q(brand__parent__category_links__category__slug=category_slug)
+                Q(category__slug=category_slug)
+                # Transitional: products created before `category` existed, and
+                # any whose brand isn't placed anywhere yet, still have it
+                # unset - fall back to the old brand-placement match so they
+                # stay visible while an admin fills them in. Drop this branch
+                # once no product is left without a category.
+                | Q(category__isnull=True, brand__category_links__category__slug=category_slug)
+                | Q(
+                    category__isnull=True,
+                    brand__parent__category_links__category__slug=category_slug,
+                )
             ).distinct()
         if brand_slug:
             queryset = queryset.filter(brand__slug=brand_slug)
@@ -49,7 +61,7 @@ class InverterProductListView(ListAPIView):
 class InverterProductDetailView(RetrieveAPIView):
     """GET /api/inverters/products/<slug>/ - public, read-only."""
 
-    queryset = Product.objects.select_related("brand", "brand__parent")
+    queryset = Product.objects.select_related("brand", "brand__parent", "category")
     serializer_class = ProductDetailSerializer
     lookup_field = "slug"
     throttle_classes = []
