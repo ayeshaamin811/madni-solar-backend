@@ -46,7 +46,18 @@ class BrandNodeSerializer(serializers.ModelSerializer):
         return _absolute_image_url(obj.image, self.context.get("request"))
 
     def get_sub(self, obj):
-        sub_variants = obj.sub_variants.all().order_by("order", "name")
+        # Only the sub-variants belonging to the category being rendered. A
+        # shared parent (Inverex sits under both Ongrid and Hybrid) would
+        # otherwise list every one of its sub-variants under both trees.
+        category = self.context.get("category")
+        sub_variants = [
+            sub
+            for sub in obj.sub_variants.all()
+            # A sub-variant left without a category predates the field - show it
+            # under each of the parent's categories, as before, until an admin
+            # fills it in.
+            if category is None or sub.category_id in (None, category.pk)
+        ]
         return SubVariantSerializer(sub_variants, many=True, context=self.context).data
 
 
@@ -60,7 +71,10 @@ class CategorySerializer(serializers.ModelSerializer):
     def get_brands(self, obj):
         category_brands = obj.category_brands.select_related("brand").order_by("order")
         brands = [cb.brand for cb in category_brands]
-        return BrandNodeSerializer(brands, many=True, context=self.context).data
+        # Pass the category down so each brand node can drop the sub-variants
+        # that belong to a different one.
+        context = {**self.context, "category": obj}
+        return BrandNodeSerializer(brands, many=True, context=context).data
 
 
 class ProductListSerializer(serializers.ModelSerializer):

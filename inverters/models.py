@@ -42,6 +42,27 @@ class Brand(models.Model):
     parent = models.ForeignKey(
         "self", null=True, blank=True, on_delete=models.CASCADE, related_name="sub_variants"
     )
+
+    # Which of the parent's categories this sub-variant belongs to. Only
+    # meaningful for a sub-variant: a top-level brand is placed by CategoryBrand
+    # and keeps this null (save() enforces that).
+    #
+    # Needed because a shared parent sits in several categories - Inverex is
+    # under both Ongrid and Hybrid - and its sub-variants would otherwise be
+    # listed under every one of them. Left blank it is derived in save() from
+    # the parent's only placement; for a shared parent clean() requires it.
+    category = models.ForeignKey(
+        Category,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="brands",
+        help_text=(
+            "Sub-variants only. Leave blank unless the parent brand sits under "
+            "more than one category - then pick which one this sub-variant "
+            "belongs to."
+        ),
+    )
     name = models.CharField(max_length=120)
     slug = models.SlugField(max_length=160, unique=True)
     description = models.TextField(blank=True)
@@ -56,6 +77,19 @@ class Brand(models.Model):
     def __str__(self):
         return f"{self.parent} -> {self.name}" if self.parent else self.name
 
+    def placement_categories(self):
+        """Categories this brand may appear under.
+
+        A top-level brand is placed by CategoryBrand rows of its own; a
+        sub-variant has no placement and can only sit where its parent sits.
+        """
+        node = self.parent or self
+        if node.pk is None:
+            return []
+        return list(
+            Category.objects.filter(category_brands__brand=node).order_by("order", "name")
+        )
+
     def clean(self):
         # A brand set as its own (or an ancestor's) parent would make
         # __str__ - and any tree walk - recurse forever.
@@ -65,7 +99,61 @@ class Brand(models.Model):
                 raise ValidationError({"parent": "A brand can't be its own ancestor."})
             node = node.parent
 
+        if self.parent_id is None:
+            if self.category_id is not None:
+                raise ValidationError(
+                    {
+                        "category": (
+                            "Only a sub-variant carries a category. Place a top-level "
+                            "brand from the category's own admin page instead."
+                        )
+                    }
+                )
+            return
+
+        categories = self.placement_categories()
+
+        if self.category_id is None:
+            # Nothing to choose between, or a parent not placed anywhere yet -
+            # let it save unset rather than trapping the admin.
+            if len(categories) < 2:
+                return
+            names = " and ".join(category.name for category in categories)
+            raise ValidationError(
+                {
+                    "category": (
+                        f"{self.parent.name} is placed in {names} - pick which one "
+                        "this sub-variant belongs to."
+                    )
+                }
+            )
+
+        if self.category_id not in [category.pk for category in categories]:
+            if not categories:
+                raise ValidationError(
+                    {
+                        "category": (
+                            f"{self.parent.name} isn't placed under any category yet - "
+                            "add it to one from the category admin first."
+                        )
+                    }
+                )
+            names = ", ".join(category.name for category in categories)
+            raise ValidationError(
+                {"category": f"{self.parent.name} is only placed in {names}."}
+            )
+
     def save(self, *args, **kwargs):
+        if self.parent_id is None:
+            # A top-level brand's placement lives in CategoryBrand; a category
+            # here would be a second, disagreeing answer.
+            self.category = None
+        elif self.category_id is None:
+            # Unambiguous parent placement - fill it in so the category tree
+            # never has to guess, without asking the admin.
+            categories = self.placement_categories()
+            if len(categories) == 1:
+                self.category = categories[0]
         self.slug = self.slug.lower()
         self.image = compress_field_file(
             self.image, max_dimension=BRAND_IMAGE_MAX_DIMENSION, quality=IMAGE_QUALITY
@@ -154,6 +242,10 @@ class Product(models.Model):
         sub-variant (e.g. Inverex -> Single Phase) it is the parent's
         placements that decide. Returns [] for a brand not placed anywhere yet.
         """
+        if self.brand.parent_id and self.brand.category_id:
+            # The sub-variant is already scoped to one category, so its products
+            # can't belong anywhere else - nothing left for an admin to pick.
+            return [self.brand.category]
         node = self.brand.parent or self.brand
         return list(
             Category.objects.filter(category_brands__brand=node).order_by("order", "name")

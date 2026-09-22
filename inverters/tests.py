@@ -10,6 +10,9 @@ from .models import Brand, Category, CategoryBrand, Product
 backfill_unambiguous_categories = import_module(
     "inverters.migrations.0007_backfill_product_category"
 ).backfill_unambiguous_categories
+backfill_unambiguous_brand_categories = import_module(
+    "inverters.migrations.0009_backfill_brand_category"
+).backfill_unambiguous_categories
 
 PRODUCTS_URL = "/api/inverters/products/"
 
@@ -189,3 +192,137 @@ class BackfillMigrationTests(APITestCase):
         self.assertIsNone(self.products["fox"].category)
         # No placement -> nothing to fill in.
         self.assertIsNone(self.products["knox"].category)
+
+
+CATEGORIES_URL = "/api/inverters/categories/"
+
+
+class SharedBrandSubVariantTests(APITestCase):
+    """A shared parent's sub-variants must not appear under both categories.
+
+    Inverex sits under Ongrid and Hybrid as one brand, and each of its
+    sub-variants (Single Phase, Three Phase) belongs to one of the two;
+    `Brand.category` is what keeps the two trees apart.
+    """
+
+    def setUp(self):
+        self.ongrid = Category.objects.create(name="Ongrid Inverters", slug="ongrid", order=1)
+        self.hybrid = Category.objects.create(name="Hybrid Inverters", slug="hybrid", order=2)
+
+        self.inverex = Brand.objects.create(name="Inverex", slug="inverex")
+        CategoryBrand.objects.create(category=self.ongrid, brand=self.inverex)
+        CategoryBrand.objects.create(category=self.hybrid, brand=self.inverex)
+
+        self.crown = Brand.objects.create(name="Crown", slug="crown")
+        CategoryBrand.objects.create(category=self.ongrid, brand=self.crown)
+
+        self.ongrid_single = Brand.objects.create(
+            name="Single Phase", slug="inverex-ongrid-single", parent=self.inverex,
+            category=self.ongrid,
+        )
+        self.hybrid_three = Brand.objects.create(
+            name="Three Phase", slug="inverex-hybrid-three", parent=self.inverex,
+            category=self.hybrid,
+        )
+
+    def _sub_slugs(self, category_slug, brand_slug):
+        res = self.client.get(CATEGORIES_URL)
+        category = next(c for c in res.data if c["slug"] == category_slug)
+        brand = next(b for b in category["brands"] if b["slug"] == brand_slug)
+        return [sub["slug"] for sub in brand["sub"]]
+
+    def test_each_tree_shows_only_its_own_sub_variants(self):
+        self.assertEqual(self._sub_slugs("ongrid", "inverex"), ["inverex-ongrid-single"])
+        self.assertEqual(self._sub_slugs("hybrid", "inverex"), ["inverex-hybrid-three"])
+
+    def test_single_category_parent_needs_no_category_picked(self):
+        sub = Brand.objects.create(name="Single Phase", slug="crown-single", parent=self.crown)
+
+        self.assertEqual(sub.category, self.ongrid)
+
+    def test_shared_parent_sub_variant_without_a_category_is_rejected(self):
+        sub = Brand(name="Single Phase", slug="inverex-single", parent=self.inverex)
+
+        with self.assertRaises(ValidationError) as ctx:
+            sub.full_clean()
+
+        message = ctx.exception.message_dict["category"][0]
+        self.assertIn("Ongrid Inverters", message)
+        self.assertIn("Hybrid Inverters", message)
+
+    def test_category_the_parent_isnt_placed_in_is_rejected(self):
+        sub = Brand(name="Single Phase", slug="crown-single", parent=self.crown, category=self.hybrid)
+
+        with self.assertRaises(ValidationError) as ctx:
+            sub.full_clean()
+
+        self.assertIn("only placed in Ongrid Inverters", ctx.exception.message_dict["category"][0])
+
+    def test_top_level_brand_cannot_carry_a_category(self):
+        brand = Brand(name="Knox", slug="knox", category=self.ongrid)
+
+        with self.assertRaises(ValidationError) as ctx:
+            brand.full_clean()
+
+        self.assertIn("Only a sub-variant", ctx.exception.message_dict["category"][0])
+
+    def test_top_level_brand_category_is_cleared_on_save(self):
+        brand = Brand.objects.create(name="Knox", slug="knox", category=self.ongrid)
+
+        self.assertIsNone(brand.category)
+
+    def test_sub_variant_without_a_category_still_shows_in_both_trees(self):
+        # Transitional fallback for rows that predate the field.
+        Brand.objects.filter(pk=self.hybrid_three.pk).update(category=None)
+
+        self.assertIn("inverex-hybrid-three", self._sub_slugs("ongrid", "inverex"))
+        self.assertIn("inverex-hybrid-three", self._sub_slugs("hybrid", "inverex"))
+
+    def test_product_on_a_scoped_sub_variant_takes_its_category(self):
+        product = Product.objects.create(
+            brand=self.hybrid_three, name="Inverex 8kW", slug="inverex-8kw", price="180000.00"
+        )
+
+        # The sub-variant is already hybrid-only, so nothing is ambiguous even
+        # though the parent brand sits under two categories.
+        self.assertEqual(product.category, self.hybrid)
+
+
+class BrandBackfillMigrationTests(APITestCase):
+    """The 0009 backfill fills only the sub-variants the data decides on."""
+
+    def setUp(self):
+        self.ongrid = Category.objects.create(name="Ongrid Inverters", slug="ongrid", order=1)
+        self.hybrid = Category.objects.create(name="Hybrid Inverters", slug="hybrid", order=2)
+
+        self.inverex = Brand.objects.create(name="Inverex", slug="inverex")
+        CategoryBrand.objects.create(category=self.ongrid, brand=self.inverex)
+        CategoryBrand.objects.create(category=self.hybrid, brand=self.inverex)
+
+        self.crown = Brand.objects.create(name="Crown", slug="crown")
+        CategoryBrand.objects.create(category=self.ongrid, brand=self.crown)
+
+        self.knox = Brand.objects.create(name="Knox", slug="knox")  # placed nowhere
+
+        # Stand in for rows that predate the field.
+        self.subs = {}
+        for key, parent in [("inverex", self.inverex), ("crown", self.crown), ("knox", self.knox)]:
+            sub = Brand.objects.create(name="Single Phase", slug=f"{key}-single", parent=parent)
+            Brand.objects.filter(pk=sub.pk).update(category=None)
+            self.subs[key] = sub
+
+    def test_backfill(self):
+        backfill_unambiguous_brand_categories(django_apps, None)
+
+        for sub in self.subs.values():
+            sub.refresh_from_db()
+
+        self.assertEqual(self.subs["crown"].category, self.ongrid)  # one placement
+        self.assertIsNone(self.subs["inverex"].category)  # two - admin picks
+        self.assertIsNone(self.subs["knox"].category)  # none to fill
+
+    def test_backfill_leaves_top_level_brands_alone(self):
+        backfill_unambiguous_brand_categories(django_apps, None)
+        self.crown.refresh_from_db()
+
+        self.assertIsNone(self.crown.category)

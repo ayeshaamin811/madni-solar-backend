@@ -23,13 +23,15 @@ class SubVariantInline(admin.TabularInline):
     model = Brand
     fk_name = "parent"
     extra = 1
-    fields = ("name", "slug", "order", "description", "image")
+    fields = ("name", "slug", "category", "order", "description", "image")
     prepopulated_fields = {"slug": ("name",)}
 
 
 @admin.register(Brand)
 class BrandAdmin(admin.ModelAdmin):
-    list_display = ("name", "slug", "parent", "order")
+    list_display = ("name", "slug", "parent", "category", "order")
+    # The "-" bucket lists sub-variants still without a category.
+    list_filter = ("category",)
     search_fields = ("name", "slug")
     prepopulated_fields = {"slug": ("name",)}
     autocomplete_fields = ["parent"]
