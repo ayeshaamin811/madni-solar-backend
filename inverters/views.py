@@ -54,7 +54,9 @@ class InverterProductListView(ListAPIView):
                 )
             ).distinct()
         if brand_slug:
-            queryset = queryset.filter(brand__slug=brand_slug)
+            # A parent brand (e.g. "All Brands with Capacity") carries no products
+            # of its own - they live on its sub-variants - so match those too.
+            queryset = queryset.filter(Q(brand__slug=brand_slug) | Q(brand__parent__slug=brand_slug))
         return queryset
 
 
